@@ -6,7 +6,7 @@ Simple XMPP Client using Python & Slixmpp
 * Python 3.6+
 
 
-## Installation guide
+## Install
 
 1. Clone repo
 2. Create a virtualenv: `python -m venv venv` and activate it
@@ -18,9 +18,9 @@ Simple XMPP Client using Python & Slixmpp
 
 This client provides basic features related with chat-application stuff, all throughout a CLI program.
 
-- [ ] Register new account.
+- [x] Register new account.
 - [ ] Login / Logout.
-- [ ] Delete account from server.
+- [x] Delete account from server.
 - [ ] Add contact.
 - [ ] Display contact info.
 - [ ] Chat 1v1 with any user.
