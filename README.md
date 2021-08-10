@@ -19,7 +19,7 @@ Simple XMPP Client using Python & Slixmpp
 This client provides basic features related with chat-application stuff, all throughout a CLI program.
 
 - [x] Register new account.
-- [ ] Login / Logout.
+- [x] Login / Logout.
 - [x] Delete account from server.
 - [ ] Add contact.
 - [ ] Display contact info.
@@ -29,9 +29,9 @@ This client provides basic features related with chat-application stuff, all thr
     - [ ] Join an existing room.
     - [ ] Send a message to a room.
     - [ ] Leave room.
-- [ ] Send presence message.
+- [x] Send presence message.
 - [ ] Send/Receive files.
-- [ ] Send/Receive notifications.
+- [x] Send/Receive notifications.
 
 
 ### Updates
