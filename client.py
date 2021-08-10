@@ -1,10 +1,8 @@
 import logging
 
-from sleekxmpp import ClientXMPP
-from sleekxmpp.exceptions import IqError, IqTimeout
-
-
-class EchoBot(ClientXMPP):
+from slixmpp import ClientXMPP
+from slixmpp.exceptions import IqError, IqTimeout
+class Client(ClientXMPP):
 
     def __init__(self, jid, password):
         ClientXMPP.__init__(self, jid, password)

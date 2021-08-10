@@ -1,1 +1,5 @@
-DOMAIN = '@domain.xyz'
+DEFAULT_DOMAIN = 'alumchat.xyz'
+
+# User status
+AVAILABLE = 'AVAILABLE'
+UNAVAILABLE = 'UNAVAILABLE'
