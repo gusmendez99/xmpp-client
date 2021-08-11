@@ -1,9 +1,23 @@
-from logging import info
 import slixmpp
+import time
 from settings import *
 from slixmpp.exceptions import IqError, IqTimeout
 import xml.etree.ElementTree as ET
 
+def app_thread(xmpp, stop):
+    while True:
+        # Run XMPP Client
+        try:
+            xmpp.process(forever=True, timeout=TIMEOUT)
+        except:
+            print("Error on XMPP client...")
+        if stop(): 
+            break
+
+        time.sleep(WAIT_TIMEOUT)
+    
+    xmpp.get_disconnected()
+    return
 class MainClient(slixmpp.ClientXMPP):
 
     def __init__(self, jid, password, status, status_message):
@@ -107,6 +121,8 @@ class MainClient(slixmpp.ClientXMPP):
             self.messages[recipient]["messages"].append(current_message)
         else:
             self.messages[recipient] = {"messages":[current_message]}
+        
+        print("Message sent")
 
     def muc_message(self, message = ""):
         username = str(message['mucnick'])

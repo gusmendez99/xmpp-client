@@ -39,7 +39,3 @@ This client provides basic features related with chat-application stuff, all thr
 - **2021-07-25**: Initial commit.
 - **2021-07-02**: Test & OpenFire Setup on local (after connection errors...).
 - **2021-07-09**: Slixmpp Test done, starting with final code and refactor.
-
-
-
-
