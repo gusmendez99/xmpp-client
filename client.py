@@ -1,3 +1,4 @@
+from logging import info
 import slixmpp
 from settings import *
 from slixmpp.exceptions import IqError, IqTimeout
@@ -123,7 +124,6 @@ class MainClient(slixmpp.ClientXMPP):
         if try_auto_sub:
             item.subscribe()
 
-
     def got_online(self, event):
         sender = str(event['from'])
         if MUC_DEFAULT_SENDER in sender:
@@ -196,4 +196,29 @@ class MainClient(slixmpp.ClientXMPP):
                 else:
                     # Reset
                     text_formatted = ''
+
+    def show_contacts(self):
+        self.get_roster()
+        contacts = self.roster[self.jid]
+
+        for contact in contacts.keys():
+            if contact != self.jid:
+                # Print contact info
+                print(f"Contact: {contact}")
+                username = contact[:str(contact).index("@")]
+
+                if username in self.contacts.keys():
+                    info = self.contacts[username]['show']
+                    status = self.contacts[username]['status']
+                    print(f" INFO: { info }")
+                    print(f" STATUS: { status }")
+
+                else:
+                    print(f" INFO: { UNAVAILABLE }")
+                    print(f" STATUS: { UNAVAILABLE }")
+
+                # Print general info
+                print(f" - GROUPS: { contacts[username]['groups'] }")
+                print(f" - SUBS: { contacts[username]['subscription'] }")
+            
     

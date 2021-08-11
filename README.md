@@ -22,7 +22,7 @@ This client provides basic features related with chat-application stuff, all thr
 - [x] Login / Logout.
 - [x] Delete account from server.
 - [x] Add contact.
-- [ ] Display contact info.
+- [x] Display contact info.
 - [x] Chat 1v1 with any user.
 - [ ] Room options:
     - [ ] Create room.
