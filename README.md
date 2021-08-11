@@ -24,11 +24,11 @@ This client provides basic features related with chat-application stuff, all thr
 - [x] Add contact.
 - [x] Display contact info.
 - [x] Chat 1v1 with any user.
-- [ ] Room options:
-    - [ ] Create room.
-    - [ ] Join an existing room.
-    - [ ] Send a message to a room.
-    - [ ] Leave room.
+- [x] Room options:
+    - [x] Create room.
+    - [x] Join an existing room.
+    - [x] Send a message to a room.
+    - [x] Leave room.
 - [x] Send presence message.
 - [ ] Send/Receive files.
 - [x] Send/Receive notifications.

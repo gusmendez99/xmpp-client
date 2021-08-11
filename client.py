@@ -2,6 +2,7 @@ from logging import info
 import slixmpp
 from settings import *
 from slixmpp.exceptions import IqError, IqTimeout
+import xml.etree.ElementTree as ET
 
 class MainClient(slixmpp.ClientXMPP):
 
@@ -54,6 +55,9 @@ class MainClient(slixmpp.ClientXMPP):
             print("Error on login, try again...")
             self.disconnect()
 
+    """
+    Add contact
+    """
     def send_contact_subscription(self, recipient):
         try:
             # Subscribe
@@ -61,6 +65,9 @@ class MainClient(slixmpp.ClientXMPP):
         except:
             print("ERROR ON SUBSCRIBE")
     
+    """
+    Messages
+    """
     def message(self, message):
         if message['type'] == CHAT_MESSAGE_TYPE:
 
@@ -100,7 +107,95 @@ class MainClient(slixmpp.ClientXMPP):
             self.messages[recipient]["messages"].append(current_message)
         else:
             self.messages[recipient] = {"messages":[current_message]}
-    
+
+    def muc_message(self, message = ""):
+        username = str(message['mucnick'])
+        body = str(message['body'])
+
+        is_same_sender = username != self.username
+        is_valid_room = self.active_room in str(message['from'])
+        current_message = f"{username}: {body}"
+
+        if is_same_sender and is_valid_room:
+            print(current_message)
+
+    def muc_send_message(self, message):
+        self.send_message(mto=self.active_room, mbody=message, mtype=ROOM_MESSAGE_TYPE)
+
+    """
+    Rooms
+    """
+    async def muc_create_room(self, room, username):
+        self.active_room = room
+        self.username = username
+        self.is_room_owner = True
+        
+        # Create
+        self['xep_0045'].join_muc(room, username)
+        self['xep_0045'].set_affiliation(room, self.boundjid, affiliation='owner')
+
+        # Event handlers
+        self.add_event_handler(f"muc::{self.active_room}::got_online", self.muc_on_join)
+        self.add_event_handler(f"muc::{self.active_room}::got_offline", self.muc_on_left)
+
+        try:
+            query = ET.Element('{http://jabber.org/protocol/muc#owner}query')
+            elem = ET.Element('{jabber:x:data}x', type='submit')
+            query.append(elem)
+
+            iq = self.make_iq_set(query)
+            iq['to'] = room
+            iq['from'] = self.boundjid
+            iq.send()
+        except:
+            print("Error on create room")
+
+    def muc_discover_rooms(self):
+        try:
+            self['xep_0030'].get_items(jid = f"conference.{DEFAULT_DOMAIN}")
+        except (IqError, IqTimeout):
+            print("Error on discovering rooms")
+
+    def muc_exit_room(self, message = ''):
+        self['xep_0045'].leave_muc(self.active_room, self.username, msg=message)
+        # Reset
+        self.is_room_owner = False
+        self.active_room = None
+        self.username = ''
+
+    def muc_join(self, room, username):
+        # Set local atributes for room
+        self.active_room = room
+        self.username = username
+
+        # Join
+        self['xep_0045'].join_muc(room, username, wait=True, maxhistory=False)
+        self.add_event_handler(f"muc::{self.active_room}::got_online", self.muc_on_join)
+        self.add_event_handler(f"muc::{self.active_room}::got_offline", self.muc_on_left)
+
+
+    def muc_on_join(self, presence):
+        if presence['muc']['nick'] == self.username:
+            print("Joined to your own room!")
+        
+        else:
+            username = str(presence['muc']['nick'])
+            # Affiliation if its owner
+            if self.is_room_owner:
+                self['xep_0045'].set_affiliation(self.active_room, nick=username, affiliation=AFFILIATION_TYPE)
+            # TODO: Notification, terminal format
+            print(f"{username} has arrived to the room!")
+        
+
+    def muc_on_left(self, presence):
+        if presence['muc']['nick'] != self.username:
+            username = presence['muc']['nick']
+            # TODO: Notification, terminal format
+            print(f"{username} left the room!")
+
+    """
+    Presence and status
+    """
     def on_presence_subscription(self, new_presence):
         roster = self.roster[new_presence['to']]
         item = self.roster[new_presence['to']][new_presence['from']]
@@ -170,6 +265,9 @@ class MainClient(slixmpp.ClientXMPP):
         # Send stanza
         new_presence.send()
 
+    """
+    Show info
+    """
     def show_info(self, iq):
         if str(iq['type']) == 'result' \
             and MUC_DEFAULT_SENDER in str(iq['from']):
