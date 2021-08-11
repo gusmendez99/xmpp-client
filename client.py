@@ -37,6 +37,8 @@ class MainClient(slixmpp.ClientXMPP):
         self.add_event_handler("presence_subscribe", self.on_presence_subscription)
         self.add_event_handler("got_online", self.got_online)
         self.add_event_handler("got_offline", self.got_offline)
+        self.add_event_handler("disco_info",self.show_info)
+        self.add_event_handler("disco_items", self.show_info)
         
 
     async def start(self, event):
@@ -51,6 +53,13 @@ class MainClient(slixmpp.ClientXMPP):
             print("Error on login, try again...")
             self.disconnect()
 
+    def send_contact_subscription(self, recipient):
+        try:
+            # Subscribe
+            self.send_presence_subscription(recipient, self.jid)
+        except:
+            print("ERROR ON SUBSCRIBE")
+    
     def message(self, message):
         if message['type'] == CHAT_MESSAGE_TYPE:
 
@@ -58,7 +67,7 @@ class MainClient(slixmpp.ClientXMPP):
             sender = sender[:sender.index("@")]
             body = str(message['body'])
             
-            current_message = sender + ": " + body
+            current_message = f"{sender}: {body}"
 
             if sender in self.messages.keys():
                 self.messages[sender]["messages"].append(current_message)
@@ -72,6 +81,25 @@ class MainClient(slixmpp.ClientXMPP):
                 # If is a message from last chat, just print it
                 print(current_message)
 
+    def direct_message(self, recipient, message = ""):
+        self.send_message(
+            mto = recipient, 
+            mbody = message, 
+            mtype = CHAT_MESSAGE_TYPE, 
+            mfrom = self.jid
+        )
+
+        recipient = recipient[:recipient.index("@")]
+        sender = self.jid[:self.jid.index("@")]
+
+        # Final message
+        current_message = f"{sender}: {message}"
+
+        if recipient in self.messages.keys():
+            self.messages[recipient]["messages"].append(current_message)
+        else:
+            self.messages[recipient] = {"messages":[current_message]}
+    
     def on_presence_subscription(self, new_presence):
         roster = self.roster[new_presence['to']]
         item = self.roster[new_presence['to']][new_presence['from']]
@@ -135,3 +163,37 @@ class MainClient(slixmpp.ClientXMPP):
 
         # TODO: Notification, terminal format
         print(f"{sender} IS NOW OFFLINE")
+
+    def got_disconnected(self):
+        new_presence = self.Presence()
+        new_presence['type'] = UNAVAILABLE
+        # Send stanza
+        new_presence.send()
+
+    def show_info(self, iq):
+        if str(iq['type']) == 'result' \
+            and MUC_DEFAULT_SENDER in str(iq['from']):
+            
+            order = 1
+            text_formatted = ""
+            
+            print("\n Rooms: ")
+            for char in str(iq):
+                if len(text_formatted) > 7 and char == '/':
+                    print(f"{str(order)}. {text_formatted}")
+                    text_formatted = ""
+                    order += 1
+                    continue
+
+                elif "jid=" in text_formatted:
+                    text_formatted += char
+                    continue
+                
+                if char in ('j', 'i', 'd', '='):
+                    text_formatted += char
+                    if char == 'j':
+                        text_formatted = char
+                else:
+                    # Reset
+                    text_formatted = ''
+    

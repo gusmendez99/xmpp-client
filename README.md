@@ -21,9 +21,9 @@ This client provides basic features related with chat-application stuff, all thr
 - [x] Register new account.
 - [x] Login / Logout.
 - [x] Delete account from server.
-- [ ] Add contact.
+- [x] Add contact.
 - [ ] Display contact info.
-- [ ] Chat 1v1 with any user.
+- [x] Chat 1v1 with any user.
 - [ ] Room options:
     - [ ] Create room.
     - [ ] Join an existing room.
