@@ -1,4 +1,4 @@
-DEFAULT_DOMAIN = 'alumchat.xyz'
+DEFAULT_DOMAIN = 'localhost'
 TIMEOUT = 3
 WAIT_TIMEOUT = 0.2
 

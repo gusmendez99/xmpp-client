@@ -104,17 +104,19 @@ def start_xmpp_app():
                 
                 print("Choose one of the following chats:")
 
-                for key, idx in xmpp.messages.keys():
-                    print(f"{idx + 1}. Chat with {key}")
+                order = 1
+                for key in xmpp.messages.keys():
+                    print(f"{order}. Chat with {key}")
+                    order += 1
 
                 # User select conversation
                 try:
-                    chat_idx = int(input(""))
+                    chat_idx = int(input(">"))
                 except:
                     print("Choose a valid option")
                     continue
                 
-                if chat_idx < 1 or chat_idx >= len(xmpp.messages.keys()):
+                if chat_idx < 1 or chat_idx > len(xmpp.messages.keys()):
                     print("Choose a valid option")
                 else:
                     # Get user and messages
@@ -149,7 +151,7 @@ def start_xmpp_app():
             # SECONDARY OPTION: Add contact
             elif secondary_option == 3:
                 message_to = input("Name: ")
-                xmpp.send_subscription_request(message_to)
+                xmpp.send_contact_subscription(message_to)
             
             # SECONDARY OPTION: Show contacts info
             elif secondary_option == 4:

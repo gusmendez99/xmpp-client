@@ -16,7 +16,7 @@ def app_thread(xmpp, stop):
 
         time.sleep(WAIT_TIMEOUT)
     
-    xmpp.get_disconnected()
+    xmpp.got_disconnected()
     return
 class MainClient(slixmpp.ClientXMPP):
 
@@ -32,7 +32,7 @@ class MainClient(slixmpp.ClientXMPP):
         self.register_plugin('xep_0199') # XMPP Ping
         
         self.jid = jid
-        self.username = jid[:jid.index("@")]
+        self.nickname = jid[:jid.index("@")]
         self.status = status
         self.status_message = status_message
         
@@ -125,12 +125,12 @@ class MainClient(slixmpp.ClientXMPP):
         print("Message sent")
 
     def muc_message(self, message = ""):
-        username = str(message['mucnick'])
+        nickname = str(message['mucnick'])
         body = str(message['body'])
 
-        is_same_sender = username != self.username
+        is_same_sender = nickname != self.nickname
         is_valid_room = self.active_room in str(message['from'])
-        current_message = f"{username}: {body}"
+        current_message = f"{nickname}: {body}"
 
         if is_same_sender and is_valid_room:
             print(current_message)
@@ -141,13 +141,13 @@ class MainClient(slixmpp.ClientXMPP):
     """
     Rooms
     """
-    async def muc_create_room(self, room, username):
+    async def muc_create_room(self, room, nickname):
         self.active_room = room
-        self.username = username
+        self.nickname = nickname
         self.is_room_owner = True
         
         # Create
-        self['xep_0045'].join_muc(room, username)
+        self['xep_0045'].join_muc(room, nickname)
         self['xep_0045'].set_affiliation(room, self.boundjid, affiliation='owner')
 
         # Event handlers
@@ -173,41 +173,41 @@ class MainClient(slixmpp.ClientXMPP):
             print("Error on discovering rooms")
 
     def muc_exit_room(self, message = ''):
-        self['xep_0045'].leave_muc(self.active_room, self.username, msg=message)
+        self['xep_0045'].leave_muc(self.active_room, self.nickname, msg=message)
         # Reset
         self.is_room_owner = False
         self.active_room = None
-        self.username = ''
+        self.nickname = ''
 
-    def muc_join(self, room, username):
+    def muc_join(self, room, nickname):
         # Set local atributes for room
         self.active_room = room
-        self.username = username
+        self.nickname = nickname
 
         # Join
-        self['xep_0045'].join_muc(room, username, wait=True, maxhistory=False)
+        self['xep_0045'].join_muc(room, nickname, wait=True, maxhistory=False)
         self.add_event_handler(f"muc::{self.active_room}::got_online", self.muc_on_join)
         self.add_event_handler(f"muc::{self.active_room}::got_offline", self.muc_on_left)
 
 
     def muc_on_join(self, presence):
-        if presence['muc']['nick'] == self.username:
+        if presence['muc']['nick'] == self.nickname:
             print("Joined to your own room!")
         
         else:
-            username = str(presence['muc']['nick'])
+            nickname = str(presence['muc']['nick'])
             # Affiliation if its owner
             if self.is_room_owner:
-                self['xep_0045'].set_affiliation(self.active_room, nick=username, affiliation=AFFILIATION_TYPE)
+                self['xep_0045'].set_affiliation(self.active_room, nick=nickname, affiliation=AFFILIATION_TYPE)
             # TODO: Notification, terminal format
-            print(f"{username} has arrived to the room!")
+            print(f"{nickname} has arrived to the room!")
         
 
     def muc_on_left(self, presence):
-        if presence['muc']['nick'] != self.username:
-            username = presence['muc']['nick']
+        if presence['muc']['nick'] != self.nickname:
+            nickname = presence['muc']['nick']
             # TODO: Notification, terminal format
-            print(f"{username} left the room!")
+            print(f"{nickname} left the room!")
 
     """
     Presence and status
@@ -315,15 +315,18 @@ class MainClient(slixmpp.ClientXMPP):
         self.get_roster()
         contacts = self.roster[self.jid]
 
+        if(len(contacts.keys()) == 0):
+            print("No contacts yet...")
+
         for contact in contacts.keys():
             if contact != self.jid:
                 # Print contact info
                 print(f"Contact: {contact}")
-                username = contact[:str(contact).index("@")]
+                nickname = contact
 
-                if username in self.contacts.keys():
-                    info = self.contacts[username]['show']
-                    status = self.contacts[username]['status']
+                if nickname in self.contacts.keys():
+                    info = self.contacts[nickname]['show']
+                    status = self.contacts[nickname]['status']
                     print(f" INFO: { info }")
                     print(f" STATUS: { status }")
 
@@ -332,7 +335,7 @@ class MainClient(slixmpp.ClientXMPP):
                     print(f" STATUS: { UNAVAILABLE }")
 
                 # Print general info
-                print(f" - GROUPS: { contacts[username]['groups'] }")
-                print(f" - SUBS: { contacts[username]['subscription'] }")
+                print(f" - GROUPS: { contacts[nickname]['groups'] }")
+                print(f" - SUBS: { contacts[nickname]['subscription'] }")
             
     
