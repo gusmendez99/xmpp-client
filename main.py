@@ -4,10 +4,25 @@ import asyncio
 from getpass import getpass
 
 # Clients
-from client import MainClient, app_thread
+from client import MainClient
 from auth import RegisterClient, UnregisterClient
 from menu import *
 from settings import *
+
+def app_thread(xmpp, stop):
+    while True:
+        # Run XMPP Client
+        try:
+            xmpp.process(forever=True, timeout=TIMEOUT)
+        except:
+            print("Error on XMPP client...")
+        if stop(): 
+            break
+
+        time.sleep(WAIT_TIMEOUT)
+    
+    xmpp.got_disconnected()
+    return
 
 def start_xmpp_app():
     while True:

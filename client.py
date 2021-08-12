@@ -1,23 +1,10 @@
 import slixmpp
 import time
+import asyncio
 from settings import *
 from slixmpp.exceptions import IqError, IqTimeout
 import xml.etree.ElementTree as ET
 
-def app_thread(xmpp, stop):
-    while True:
-        # Run XMPP Client
-        try:
-            xmpp.process(forever=True, timeout=TIMEOUT)
-        except:
-            print("Error on XMPP client...")
-        if stop(): 
-            break
-
-        time.sleep(WAIT_TIMEOUT)
-    
-    xmpp.got_disconnected()
-    return
 class MainClient(slixmpp.ClientXMPP):
 
     def __init__(self, jid, password, status, status_message):
@@ -30,8 +17,10 @@ class MainClient(slixmpp.ClientXMPP):
         self.register_plugin('xep_0060') # PubSub
         self.register_plugin('xep_0133') # Service administration
         self.register_plugin('xep_0199') # XMPP Ping
+        self.register_plugin('xep_0363') # Files
+        self.register_plugin('xep_0085') # Notifications
         
-        self.jid = jid
+        self.local_jid = jid
         self.nickname = jid[:jid.index("@")]
         self.status = status
         self.status_message = status_message
@@ -46,13 +35,15 @@ class MainClient(slixmpp.ClientXMPP):
         # Auto authorize & subscribe on subscription received
         self.roster.auto_authorize = True
         self.roster.auto_subscribe = True
+        self.outter_presences = asyncio.Event()
 
         # Event handlers
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("message", self.message)
-        self.add_event_handler("presence_subscribe", self.on_presence_subscription)
+        self.add_event_handler("presence_subscribe", self._handle_new_subscription)
         self.add_event_handler("got_online", self.got_online)
         self.add_event_handler("got_offline", self.got_offline)
+        self.add_event_handler("groupchat_message", self.muc_message)
         self.add_event_handler("disco_info",self.show_info)
         self.add_event_handler("disco_items", self.show_info)
         
@@ -60,10 +51,11 @@ class MainClient(slixmpp.ClientXMPP):
     async def start(self, event):
         # Send presence
         self.send_presence(pshow=self.status, pstatus=self.status_message)
+        
         try:
             # Ask for roster
             await self.get_roster()
-            print(f"\n Login successfully: {self.jid}")
+            print(f"\n Login successfully: {self.local_jid}")
             self.is_client_offline = False
         except:
             print("Error on login, try again...")
@@ -75,7 +67,8 @@ class MainClient(slixmpp.ClientXMPP):
     def send_contact_subscription(self, recipient):
         try:
             # Subscribe
-            self.send_presence_subscription(recipient, self.jid)
+            self.send_presence_subscription(recipient, self.local_jid)
+            print("Contact added: ", recipient)
         except:
             print("ERROR ON SUBSCRIBE")
     
@@ -108,11 +101,11 @@ class MainClient(slixmpp.ClientXMPP):
             mto = recipient, 
             mbody = message, 
             mtype = CHAT_MESSAGE_TYPE, 
-            mfrom = self.jid
+            mfrom = self.local_jid
         )
 
         recipient = recipient[:recipient.index("@")]
-        sender = self.jid[:self.jid.index("@")]
+        sender = self.local_jid[:self.local_jid.index("@")]
 
         # Final message
         current_message = f"{sender}: {message}"
@@ -209,32 +202,6 @@ class MainClient(slixmpp.ClientXMPP):
             # TODO: Notification, terminal format
             print(f"{nickname} left the room!")
 
-    """
-    Presence and status
-    """
-    def on_presence_subscription(self, new_presence):
-        roster = self.roster[new_presence['to']]
-        item = self.roster[new_presence['to']][new_presence['from']]
-        try_auto_sub = False
-
-        if item[WHITELIST_STATUS]:
-            item.authorize()
-            if roster.auto_subscribe:
-                try_auto_sub = True
-
-        # Auto authorize
-        elif roster.auto_authorize:
-            item.authorize()
-            if roster.auto_subscribe:
-                try_auto_sub = True
-
-        elif roster.auto_authorize == False:
-            item.unauthorize()
-
-        # Subscribe
-        if try_auto_sub:
-            item.subscribe()
-
     def got_online(self, event):
         sender = str(event['from'])
         if MUC_DEFAULT_SENDER in sender:
@@ -260,7 +227,7 @@ class MainClient(slixmpp.ClientXMPP):
         }
 
         # TODO: Notification, terminal format
-        if not sender == self.jid[:self.jid.index("@")]:
+        if not sender == self.local_jid[:self.local_jid.index("@")]:
             print(f"{sender} IS ONLINE NOW. ({event_status})")
 
     def got_offline(self, event):
@@ -311,15 +278,18 @@ class MainClient(slixmpp.ClientXMPP):
                     # Reset
                     text_formatted = ''
 
+    """
+    Contacts
+    """
     def show_contacts(self):
         self.get_roster()
-        contacts = self.roster[self.jid]
+        contacts = self.roster[self.local_jid]
 
         if(len(contacts.keys()) == 0):
             print("No contacts yet...")
 
         for contact in contacts.keys():
-            if contact != self.jid:
+            if contact != self.local_jid:
                 # Print contact info
                 print(f"Contact: {contact}")
                 nickname = contact
@@ -338,4 +308,29 @@ class MainClient(slixmpp.ClientXMPP):
                 print(f" - GROUPS: { contacts[nickname]['groups'] }")
                 print(f" - SUBS: { contacts[nickname]['subscription'] }")
             
+    """
+    Presence and status
+    """
+    def _handle_new_subscription(self, new_presence):
+        roster = self.roster[new_presence['to']]
+        item = self.roster[new_presence['to']][new_presence['from']]
+        try_auto_sub = False
+
+        if item[WHITELIST_STATUS]:
+            item.authorize()
+            if roster.auto_subscribe:
+                try_auto_sub = True
+
+        # Auto authorize
+        elif roster.auto_authorize:
+            item.authorize()
+            if roster.auto_subscribe:
+                try_auto_sub = True
+
+        elif roster.auto_authorize == False:
+            item.unauthorize()
+
+        # Subscribe
+        if try_auto_sub:
+            item.subscribe()
     
