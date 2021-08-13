@@ -3,6 +3,8 @@ import time
 import asyncio
 import webbrowser
 import validators
+import mimetypes
+import uuid
 from settings import *
 from slixmpp.exceptions import IqError, IqTimeout
 import xml.etree.ElementTree as ET
@@ -20,6 +22,7 @@ class MainClient(slixmpp.ClientXMPP):
         self.register_plugin('xep_0133') # Service administration
         self.register_plugin('xep_0199') # XMPP Ping
         self.register_plugin('xep_0363') # Files
+        self.register_plugin('xep_0065') # SOCKS5 Bytestreams
         self.register_plugin('xep_0085') # Notifications
         
         self.local_jid = jid
@@ -98,6 +101,7 @@ class MainClient(slixmpp.ClientXMPP):
             else:
                 # If is a message from last chat, just print it
                 print(f"\n{current_message}")
+                print("--> ")
                 # Receive images and docs
                 if sender != self.nickname and validators.url(body):
                     webbrowser.open(body)
@@ -127,12 +131,13 @@ class MainClient(slixmpp.ClientXMPP):
         nickname = str(message['mucnick'])
         body = str(message['body'])
 
-        is_same_sender = nickname != self.nickname
+        is_same_sender = nickname == self.nickname
         is_valid_room = self.active_room in str(message['from'])
         current_message = f"{nickname}: {body}"
 
-        if is_same_sender and is_valid_room:
+        if not is_same_sender and is_valid_room:
             print(current_message)
+            print("--> ")
 
     def muc_send_message(self, message):
         self.send_message(mto=self.active_room, mbody=message, mtype=ROOM_MESSAGE_TYPE)
@@ -299,9 +304,11 @@ class MainClient(slixmpp.ClientXMPP):
         sender = str(message['from'])
         state = message[CHAT_STATE_KEY]
 
-        if self.last_chat_with == sender:
+        username = sender[:sender.index("@")]
+        if self.last_chat_with == username:
             # TODO: Notification format
-            print(f"{sender} status changed to {state}")
+            print(f"\n{username} status changed to {state}")
+            print("--> ")
 
     """
     Contacts
@@ -368,17 +375,25 @@ class MainClient(slixmpp.ClientXMPP):
 
     async def send_file(self, recipient, filename):
         try:
-            file = open(filename, 'rb')
-            print(f"\nReading {filename}...")
-            url = await self['xep_0363'].upload_file(filename, domain=DEFAULT_DOMAIN, timeout=TIMEOUT * 3)
-            # Send Response  
-            print("File URL: ", url)
+            with open(filename, 'rb') as upfile:
+                print(f"\nReading {filename}...")
+                input_file = upfile.read()
+
+            filesize = len(input_file)
+            content_type = mimetypes.guess_type(filename)[0]
+            if content_type is None:
+                content_type = DEFAULT_CONTENT_TYPE
+
+            url = await self['xep_0363'].upload_file(
+                str(uuid.uuid4()), 
+                size=filesize,
+                input_file=input_file,
+                content_type=content_type,
+                # timeout=TIMEOUT * 3
+            )
+            # Send Response
             self.direct_message(f"{recipient}@{DEFAULT_DOMAIN}", url)
         except (IqError, IqTimeout):
             print('File transfer errored')
         else:
-            print('File transfer finished')
-        finally:
-            file.close()
-
-        return
+            print('\n*** File transfer finished ***')

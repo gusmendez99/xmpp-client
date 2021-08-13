@@ -13,6 +13,7 @@ STATUS_OPTIONS = [AVAILABLE, UNAVAILABLE, AFK, IN_A_MEETING]
 CHAT_MESSAGE_TYPE = 'chat'
 WHITELIST_STATUS = 'whitelisted'
 MUC_DEFAULT_SENDER = 'conference'
+DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
 # Chat States
 CHAT_STATE_KEY = 'chat_state'
