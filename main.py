@@ -2,6 +2,7 @@ import time
 import threading
 import asyncio
 from getpass import getpass
+# import logging
 
 # Clients
 from client import MainClient
@@ -28,7 +29,7 @@ def start_xmpp_app():
     while True:
         try:
             print(main_menu)
-            option = int(input())
+            option = int(input('> '))
 
             if option < 1 or option > 4:
                 print("Choose a valid option")
@@ -55,7 +56,8 @@ def start_xmpp_app():
         while True:
             status_option = 0
             status_message = ""
-            stat_opt = input("Set as available? (y/n)?")
+            print("Set as available? (y/n)? ")
+            stat_opt = input('> ')
             
             if stat_opt.lower() == 'y' or stat_opt.lower() == "yes":
                 status = AVAILABLE
@@ -64,7 +66,7 @@ def start_xmpp_app():
             
             try:
                 print(status_menu)
-                status_option = int(input())
+                status_option = int(input('> '))
                 
                 if status_option < 1 or status_option > 4:
                     print("Choose a valid option")
@@ -101,7 +103,7 @@ def start_xmpp_app():
         while True:
             try:
                 print(secondary_menu)
-                secondary_option = int(input())
+                secondary_option = int(input('> '))
 
                 # Check option is in range
                 if secondary_option < 1 or secondary_option > 7:
@@ -126,7 +128,7 @@ def start_xmpp_app():
 
                 # User select conversation
                 try:
-                    chat_idx = int(input(">"))
+                    chat_idx = int(input("> "))
                 except:
                     print("Choose a valid option")
                     continue
@@ -137,7 +139,9 @@ def start_xmpp_app():
                     # Get user and messages
                     recipient = list(xmpp.messages.keys())[chat_idx - 1]
                     messages_sent = xmpp.messages[recipient]["messages"]
-                    xmpp.active_room = recipient
+                    xmpp.last_chat_with = recipient
+
+                    xmpp.pm_send_state_message(f"{recipient}@{DEFAULT_DOMAIN}", CHAT_STATE_ACTIVE)
 
                     print(f"\n--------- Chat with {recipient} ---------")
                     print("* write and press enter to respond (-q to quit) *")
@@ -146,14 +150,18 @@ def start_xmpp_app():
                         print(message)
 
                     while True:
-                        message_body = input()
+                        message_body = input('--> ')
 
                         # Excape reserved word
                         if message_body == '-q':
+                            xmpp.pm_send_state_message(f"{recipient}@{DEFAULT_DOMAIN}", CHAT_STATE_PAUSED)
                             break
-
-                        # Send Response  
-                        xmpp.direct_message(f"{recipient}@{DEFAULT_DOMAIN}", message_body)
+                        elif '-f ' in message_body:
+                            filename = message_body.split()[1]
+                            xmpp.file_sender(recipient, filename)
+                        else:
+                            # Send Response  
+                            xmpp.direct_message(f"{recipient}@{DEFAULT_DOMAIN}", message_body)
 
                     xmpp.current_chat_with = None
 
@@ -178,7 +186,7 @@ def start_xmpp_app():
                 while True:
                     try:
                         print(room_menu)
-                        room_option = int(input())
+                        room_option = int(input('> '))
 
                         # Check option is in range
                         if room_option < 1 or room_option > 4:
@@ -216,7 +224,7 @@ def start_xmpp_app():
 
                 while True:
                     try:
-                        message_body = input("")
+                        message_body = input('--> ')
                         if message_body == '-q':
                             break
 
@@ -224,6 +232,7 @@ def start_xmpp_app():
                     except:
                         continue
                 
+                # Leave room on exit!
                 xmpp.muc_exit_room()
 
             # SECONDARY OPTION: Send File
@@ -250,5 +259,7 @@ def start_xmpp_app():
     elif option == 4:
         return
 
+
+# logging.basicConfig(level=logging.DEBUG, format='%(levelname)-8s %(message)s')
 start_xmpp_app()
 exit(1)

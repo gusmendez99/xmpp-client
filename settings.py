@@ -14,6 +14,11 @@ CHAT_MESSAGE_TYPE = 'chat'
 WHITELIST_STATUS = 'whitelisted'
 MUC_DEFAULT_SENDER = 'conference'
 
+# Chat States
+CHAT_STATE_KEY = 'chat_state'
+CHAT_STATE_ACTIVE = 'active'
+CHAT_STATE_PAUSED = 'paused'
+
 # Rooms
 AFFILIATION_TYPE = 'member'
 ROOM_MESSAGE_TYPE = 'groupchat'

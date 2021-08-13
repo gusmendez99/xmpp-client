@@ -1,6 +1,8 @@
 import slixmpp
 import time
 import asyncio
+import webbrowser
+import validators
 from settings import *
 from slixmpp.exceptions import IqError, IqTimeout
 import xml.etree.ElementTree as ET
@@ -46,6 +48,7 @@ class MainClient(slixmpp.ClientXMPP):
         self.add_event_handler("groupchat_message", self.muc_message)
         self.add_event_handler("disco_info",self.show_info)
         self.add_event_handler("disco_items", self.show_info)
+        self.add_event_handler("chatstate", self.show_chatstate)
         
 
     async def start(self, event):
@@ -91,10 +94,13 @@ class MainClient(slixmpp.ClientXMPP):
 
             # TODO: Notification, terminal format
             if not self.last_chat_with == sender:
-                print(f" NEW MESSAGE FROM  {sender}")
+                print(f"\n NEW MESSAGE FROM {sender}")
             else:
                 # If is a message from last chat, just print it
-                print(current_message)
+                print(f"\n{current_message}")
+                # Receive images and docs
+                if sender != self.nickname and validators.url(body):
+                    webbrowser.open(body)
 
     def direct_message(self, recipient, message = ""):
         self.send_message(
@@ -115,7 +121,7 @@ class MainClient(slixmpp.ClientXMPP):
         else:
             self.messages[recipient] = {"messages":[current_message]}
         
-        print("Message sent")
+        # print("Message sent")
 
     def muc_message(self, message = ""):
         nickname = str(message['mucnick'])
@@ -131,6 +137,17 @@ class MainClient(slixmpp.ClientXMPP):
     def muc_send_message(self, message):
         self.send_message(mto=self.active_room, mbody=message, mtype=ROOM_MESSAGE_TYPE)
 
+    def pm_send_state_message(self, recipient, state):
+        sender = self.boundjid.bare
+
+        message = self.make_message(
+            mto=recipient,
+            mfrom=self.boundjid.bare,
+            mtype=CHAT_MESSAGE_TYPE
+        )
+        message[CHAT_STATE_KEY] = state
+        message.send()
+    
     """
     Rooms
     """
@@ -161,7 +178,7 @@ class MainClient(slixmpp.ClientXMPP):
 
     def muc_discover_rooms(self):
         try:
-            self['xep_0030'].get_items(jid = f"conference.{DEFAULT_DOMAIN}")
+            self['xep_0030'].get_items(jid = f"conference.{DEFAULT_DOMAIN}", iterator=True)
         except (IqError, IqTimeout):
             print("Error on discovering rooms")
 
@@ -186,12 +203,12 @@ class MainClient(slixmpp.ClientXMPP):
     def muc_on_join(self, presence):
         if presence['muc']['nick'] == self.nickname:
             print("Joined to your own room!")
-        
-        else:
-            nickname = str(presence['muc']['nick'])
             # Affiliation if its owner
             if self.is_room_owner:
                 self['xep_0045'].set_affiliation(self.active_room, nick=nickname, affiliation=AFFILIATION_TYPE)
+        
+        else:
+            nickname = str(presence['muc']['nick'])
             # TODO: Notification, terminal format
             print(f"{nickname} has arrived to the room!")
         
@@ -278,6 +295,14 @@ class MainClient(slixmpp.ClientXMPP):
                     # Reset
                     text_formatted = ''
 
+    def show_chatstate(self, message):
+        sender = str(message['from'])
+        state = message[CHAT_STATE_KEY]
+
+        if self.last_chat_with == sender:
+            # TODO: Notification format
+            print(f"{sender} status changed to {state}")
+
     """
     Contacts
     """
@@ -333,4 +358,27 @@ class MainClient(slixmpp.ClientXMPP):
         # Subscribe
         if try_auto_sub:
             item.subscribe()
-    
+
+    """
+    File sending
+    """
+    def file_sender(self, recipient, filename):
+        """ Helper function to run file send """
+        asyncio.run(self.send_file(recipient, filename))
+
+    async def send_file(self, recipient, filename):
+        try:
+            file = open(filename, 'rb')
+            print(f"\nReading {filename}...")
+            url = await self['xep_0363'].upload_file(filename, domain=DEFAULT_DOMAIN, timeout=TIMEOUT * 3)
+            # Send Response  
+            print("File URL: ", url)
+            self.direct_message(f"{recipient}@{DEFAULT_DOMAIN}", url)
+        except (IqError, IqTimeout):
+            print('File transfer errored')
+        else:
+            print('File transfer finished')
+        finally:
+            file.close()
+
+        return

@@ -28,9 +28,9 @@ This client provides basic features related with chat-application stuff, all thr
     - [x] Create room.
     - [x] Join an existing room.
     - [x] Send a message to a room.
-    - [x] Leave room.
+    - [x] Leave room (auto on leave room chat).
 - [x] Send presence message.
-- [ ] Send/Receive files.
+- [x] Send/Receive files.
 - [x] Send/Receive notifications.
 
 
@@ -39,3 +39,4 @@ This client provides basic features related with chat-application stuff, all thr
 - **2021-07-25**: Initial commit.
 - **2021-07-02**: Test & OpenFire Setup on local (after connection errors...).
 - **2021-07-09**: Slixmpp Test done, starting with final code and refactor.
+- **2021-07-12**: Client(s) & Project requirements done
