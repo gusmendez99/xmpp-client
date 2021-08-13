@@ -96,7 +96,6 @@ class MainClient(slixmpp.ClientXMPP):
             else:
                 self.messages[sender] = {"messages": [current_message]}
 
-            # TODO: Notification, terminal format
             if not self.last_chat_with == sender:
                 print(f"{OKBLUE}\n NEW MESSAGE FROM {sender}{ENDC}")
             else:
@@ -184,9 +183,16 @@ class MainClient(slixmpp.ClientXMPP):
 
     def muc_discover_rooms(self):
         try:
-            self['xep_0030'].get_items(jid = f"conference.{DEFAULT_DOMAIN}", iterator=True)
+            asyncio.run(self.print_my_rooms())
         except (IqError, IqTimeout):
             print("Error on discovering rooms")
+
+    async def print_my_rooms(self):
+        try:
+            rooms = await self['xep_0030'].get_items(jid = f"conference.{DEFAULT_DOMAIN}", iterator=True)
+        except (IqError, IqTimeout):
+            print("Error on discovering rooms")
+
 
     def muc_exit_room(self, message = ''):
         self['xep_0045'].leave_muc(self.active_room, self.nickname, msg=message)
@@ -210,19 +216,17 @@ class MainClient(slixmpp.ClientXMPP):
         if presence['muc']['nick'] == self.nickname:
             print("Joined to your own room!")
             # Affiliation if its owner
-            if self.is_room_owner:
-                self['xep_0045'].set_affiliation(self.active_room, nick=nickname, affiliation=AFFILIATION_TYPE)
         
         else:
             nickname = str(presence['muc']['nick'])
-            # TODO: Notification, terminal format
+            if self.is_room_owner:
+                self['xep_0045'].set_affiliation(self.active_room, nick=nickname, affiliation=AFFILIATION_TYPE)
             print(f"{OKGREEN}{nickname} has arrived to the room!{ENDC}")
         
 
     def muc_on_left(self, presence):
         if presence['muc']['nick'] != self.nickname:
             nickname = presence['muc']['nick']
-            # TODO: Notification, terminal format
             print(f"{WARNING}{nickname} left the room!{ENDC}")
 
     def got_online(self, event):
@@ -249,7 +253,6 @@ class MainClient(slixmpp.ClientXMPP):
             "status": event_status
         }
 
-        # TODO: Notification, terminal format
         if not sender == self.local_jid[:self.local_jid.index("@")]:
             print(f"{OKGREEN}{sender} IS ONLINE NOW. ({event_status}){ENDC}")
 
@@ -262,7 +265,6 @@ class MainClient(slixmpp.ClientXMPP):
         self.contacts[sender]["show"] = UNAVAILABLE
         self.contacts[sender]["status"] = UNAVAILABLE
 
-        # TODO: Notification, terminal format
         print(f"{WARNING}{sender} IS NOW OFFLINE{ENDC}")
 
     def got_disconnected(self):
@@ -300,6 +302,7 @@ class MainClient(slixmpp.ClientXMPP):
                 else:
                     # Reset
                     text_formatted = ''
+        return
 
     def show_chatstate(self, message):
         sender = str(message['from'])
@@ -307,7 +310,6 @@ class MainClient(slixmpp.ClientXMPP):
 
         username = sender[:sender.index("@")]
         if self.last_chat_with == username:
-            # TODO: Notification format
             print(f"{OKCYAN}\n{username} status changed to {state}{ENDC}")
             print("--> ")
 

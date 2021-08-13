@@ -239,7 +239,6 @@ def start_xmpp_app():
             elif secondary_option == 6:
                 # TODO: Send Files
                 print("You can send files on 1 vs 1 (PM Chat, option 1) with the command: '-f [filename]'. Try it out!")
-                break
 
             # SECONDARY OPTION: Logout
             elif secondary_option == 7:
