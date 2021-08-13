@@ -1,6 +1,7 @@
 # xmpp-client
 Simple XMPP Client using Python & Slixmpp
 
+![terminal](https://github.com/gusmendez99/xmpp-client/blob/main/images/terminal.png?raw=true)
 
 ## Starting 🚀
 
