@@ -1,3 +1,4 @@
+from menu import ENDC, OKBLUE, OKCYAN, OKGREEN, WARNING
 import slixmpp
 import time
 import asyncio
@@ -97,7 +98,7 @@ class MainClient(slixmpp.ClientXMPP):
 
             # TODO: Notification, terminal format
             if not self.last_chat_with == sender:
-                print(f"\n NEW MESSAGE FROM {sender}")
+                print(f"{OKBLUE}\n NEW MESSAGE FROM {sender}{ENDC}")
             else:
                 # If is a message from last chat, just print it
                 print(f"\n{current_message}")
@@ -215,14 +216,14 @@ class MainClient(slixmpp.ClientXMPP):
         else:
             nickname = str(presence['muc']['nick'])
             # TODO: Notification, terminal format
-            print(f"{nickname} has arrived to the room!")
+            print(f"{OKGREEN}{nickname} has arrived to the room!{ENDC}")
         
 
     def muc_on_left(self, presence):
         if presence['muc']['nick'] != self.nickname:
             nickname = presence['muc']['nick']
             # TODO: Notification, terminal format
-            print(f"{nickname} left the room!")
+            print(f"{WARNING}{nickname} left the room!{ENDC}")
 
     def got_online(self, event):
         sender = str(event['from'])
@@ -250,7 +251,7 @@ class MainClient(slixmpp.ClientXMPP):
 
         # TODO: Notification, terminal format
         if not sender == self.local_jid[:self.local_jid.index("@")]:
-            print(f"{sender} IS ONLINE NOW. ({event_status})")
+            print(f"{OKGREEN}{sender} IS ONLINE NOW. ({event_status}){ENDC}")
 
     def got_offline(self, event):
         sender = str(event['from'])
@@ -262,7 +263,7 @@ class MainClient(slixmpp.ClientXMPP):
         self.contacts[sender]["status"] = UNAVAILABLE
 
         # TODO: Notification, terminal format
-        print(f"{sender} IS NOW OFFLINE")
+        print(f"{WARNING}{sender} IS NOW OFFLINE{ENDC}")
 
     def got_disconnected(self):
         new_presence = self.Presence()
@@ -307,7 +308,7 @@ class MainClient(slixmpp.ClientXMPP):
         username = sender[:sender.index("@")]
         if self.last_chat_with == username:
             # TODO: Notification format
-            print(f"\n{username} status changed to {state}")
+            print(f"{OKCYAN}\n{username} status changed to {state}{ENDC}")
             print("--> ")
 
     """
