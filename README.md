@@ -3,6 +3,12 @@ Simple XMPP Client using Python & Slixmpp
 
 ![terminal](https://github.com/gusmendez99/xmpp-client/blob/main/images/terminal.png?raw=true)
 
+**Demo**
+
+![demo](https://github.com/gusmendez99/xmpp-client/blob/main/images/demo.png?raw=true)
+
+[Demo - YouTube](https://youtu.be/ziqGs8GomC8)
+
 ## Starting 🚀
 
 _These instructions will allow you to get a copy of the project running on your local machine for development and testing purposes._
